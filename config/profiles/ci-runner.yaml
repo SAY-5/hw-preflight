@@ -1,0 +1,47 @@
+# Profile: ci-runner
+# Use case: ephemeral CI workers (GitHub-hosted, GitLab-shared, etc.).
+# Permissive thresholds, fast timeouts, peripheral checks disabled.
+
+cpu:
+  min_count: 1
+  required_features: []
+
+memory:
+  min_total_bytes: 536870912         # 512 MiB
+  min_available_bytes: 134217728     # 128 MiB
+  require_swap_disabled: false
+
+disk:
+  path: /
+  min_free_bytes: 536870912          # 512 MiB
+
+system:
+  loadavg_factor: 4.0
+  min_kernel_version: "5.4.0"
+  required_modules: []
+  allowed_clocksources:
+    - tsc
+    - kvm-clock
+    - hyperv_clocksource_tsc_page
+
+thermal:
+  max_milli_celsius: 95000
+
+vm_overcommit:
+  allowed_values:
+    - 0
+    - 1
+    - 2
+
+runner:
+  per_check_timeout_seconds: 3.0
+  enabled_checks:
+    - cpu_count
+    - memory_total
+    - memory_available
+    - disk_free
+    - loadavg_short
+    - kernel_version
+    - vm_overcommit
+  disabled_checks: []
+  parallelism: 0

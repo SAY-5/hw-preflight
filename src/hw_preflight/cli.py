@@ -28,6 +28,16 @@ def main() -> None:
     help="Path to YAML config; defaults are used when omitted.",
 )
 @click.option(
+    "--profile",
+    "profile_name",
+    type=str,
+    default=None,
+    help=(
+        "Built-in profile name (production-server, edge-device, ci-runner) "
+        "or path to a profile YAML. Mutually exclusive with --config."
+    ),
+)
+@click.option(
     "--json",
     "json_path",
     type=click.Path(dir_okay=False, path_type=Path),
@@ -40,6 +50,15 @@ def main() -> None:
     type=click.Path(dir_okay=False, path_type=Path),
     default=None,
     help="Write the Markdown report to this path.",
+)
+@click.option(
+    "--webhook-url",
+    type=str,
+    default=None,
+    help=(
+        "POST the JSON report to this URL with HMAC-SHA256 signing. "
+        "Reads the secret from $HW_PREFLIGHT_WEBHOOK_SECRET."
+    ),
 )
 @click.option(
     "--exit-on-fail",
@@ -55,14 +74,23 @@ def main() -> None:
 @click.option("--quiet", is_flag=True, help="Suppress stdout summary.")
 def run(
     config_path: Path | None,
+    profile_name: str | None,
     json_path: Path | None,
     md_path: Path | None,
+    webhook_url: str | None,
     exit_on_fail: bool,
     parallelism: int | None,
     quiet: bool,
 ) -> None:
     """Run every registered check and emit a report."""
-    config = load_config(config_path)
+    if config_path is not None and profile_name is not None:
+        raise click.UsageError("--config and --profile are mutually exclusive")
+    if profile_name is not None:
+        from .profiles import load_profile
+
+        config = load_profile(profile_name)
+    else:
+        config = load_config(config_path)
     if parallelism is not None:
         config.runner.parallelism = parallelism
     report = run_all(config)
@@ -72,9 +100,20 @@ def run(
     if md_path is not None:
         write_markdown(report, md_path)
 
+    if webhook_url is not None:
+        from .webhook import deliver
+
+        try:
+            status_code = deliver(report, webhook_url)
+            click.echo(f"webhook -> {webhook_url} {status_code}", err=True)
+        except Exception as exc:  # pragma: no cover - logged, not raised
+            click.echo(f"webhook delivery failed: {exc}", err=True)
+            if exit_on_fail:
+                sys.exit(2)
+
     if not quiet:
-        if json_path is None and md_path is None:
-            # Default to JSON on stdout when no files requested.
+        if json_path is None and md_path is None and webhook_url is None:
+            # Default to JSON on stdout when no destinations are requested.
             click.echo(to_json(report))
         else:
             s = report.summary
@@ -86,6 +125,15 @@ def run(
 
     if exit_on_fail and report.summary["fail"] > 0:
         sys.exit(1)
+
+
+@main.command("profiles")
+def list_profile_names() -> None:
+    """List built-in profile short names."""
+    from .profiles import list_profiles
+
+    for name in list_profiles():
+        click.echo(name)
 
 
 @main.command("list")

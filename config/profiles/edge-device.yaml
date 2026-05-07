@@ -1,0 +1,64 @@
+# Profile: edge-device
+# Use case: small ARM SBCs and field-deployed appliances with peripherals.
+# Looser CPU/memory floors, cares about GPIO/I2C/serial presence.
+
+cpu:
+  min_count: 1
+  required_features: []
+
+memory:
+  min_total_bytes: 268435456         # 256 MiB
+  min_available_bytes: 67108864      # 64 MiB
+  require_swap_disabled: true
+
+disk:
+  path: /
+  min_free_bytes: 134217728          # 128 MiB
+
+system:
+  loadavg_factor: 2.0
+  min_kernel_version: "4.19.0"
+  required_modules: []
+  allowed_clocksources:
+    - arch_sys_counter
+    - tsc
+
+thermal:
+  max_milli_celsius: 85000
+
+rtc:
+  max_drift_seconds: 30.0
+
+gpio:
+  min_chips: 1
+  min_i2c_buses: 1
+
+serial:
+  candidate_paths:
+    - /dev/ttyS0
+    - /dev/ttyAMA0
+    - /dev/ttyUSB0
+  by_id_glob: /dev/serial/by-id/*
+  baudrate: 115200
+  handshake_send: "AT\r\n"
+  handshake_response_regex: "^OK"
+  handshake_timeout_seconds: 2.0
+
+runner:
+  per_check_timeout_seconds: 8.0
+  enabled_checks:
+    - cpu_count
+    - memory_total
+    - memory_available
+    - disk_free
+    - loadavg_short
+    - kernel_version
+    - thermal_max
+    - serial_port_present
+    - serial_handshake
+    - gpio_chips
+    - i2c_bus_present
+    - rtc_drift
+    - usb_device_count
+  disabled_checks: []
+  parallelism: 2

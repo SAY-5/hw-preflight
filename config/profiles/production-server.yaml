@@ -1,0 +1,59 @@
+# Profile: production-server
+# Use case: long-lived bare-metal or VM hosts running services in production.
+# Strict thresholds, requires NTP sync and an enforcing/permissive SELinux mode.
+
+cpu:
+  min_count: 4
+  required_features:
+    - sse4_2
+    - aes
+
+memory:
+  min_total_bytes: 8589934592        # 8 GiB
+  min_available_bytes: 1073741824    # 1 GiB
+  require_swap_disabled: false
+
+disk:
+  path: /
+  min_free_bytes: 10737418240        # 10 GiB
+
+system:
+  loadavg_factor: 1.0
+  min_kernel_version: "5.15.0"
+  required_modules: []
+  allowed_clocksources:
+    - tsc
+    - kvm-clock
+
+thermal:
+  max_milli_celsius: 75000
+
+rtc:
+  max_drift_seconds: 1.0
+
+vm_overcommit:
+  allowed_values:
+    - 0
+    - 1
+    - 2
+
+runner:
+  per_check_timeout_seconds: 10.0
+  enabled_checks:
+    - cpu_count
+    - cpu_features
+    - memory_total
+    - memory_available
+    - disk_free
+    - loadavg_short
+    - kernel_version
+    - clock_source
+    - time_sync
+    - thermal_max
+    - network_default_route
+    - rtc_drift
+    - vm_overcommit
+    - selinux_status
+    - nvme_smart
+  disabled_checks: []
+  parallelism: 0                     # 0 = cpu_count

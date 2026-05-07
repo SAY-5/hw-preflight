@@ -127,11 +127,48 @@ cmake --build hwprobe/build -j
 # run it
 hw-preflight run --json out.json --md out.md
 hw-preflight list                       # list registered check names
+hw-preflight profiles                   # list built-in profiles
 hw-preflight render-md out.json         # rerender JSON to stdout Markdown
 
 # with a custom config
 hw-preflight run --config config/preflight.example.yaml --exit-on-fail
+
+# with a built-in profile
+hw-preflight run --profile production-server --exit-on-fail
+
+# parallel execution + webhook delivery
+HW_PREFLIGHT_WEBHOOK_SECRET=topsecret \
+  hw-preflight run --profile ci-runner --parallelism 0 \
+                   --webhook-url https://collector.example/hw-preflight
 ```
+
+## Profiles
+
+Three profiles ship in [`config/profiles/`](config/profiles/):
+
+| Profile | One-line use case |
+|---|---|
+| `production-server` | Long-lived bare-metal/VM hosts running services. Strict thresholds, requires NTP sync, allows SELinux Enforcing or Permissive only, gates on NVMe SMART. |
+| `edge-device` | Small ARM SBCs and field-deployed appliances with peripherals. Looser CPU/RAM floors, requires GPIO chip + I2C bus + serial handshake; tolerates higher RTC drift and thermal headroom. |
+| `ci-runner` | Ephemeral CI workers (GitHub-hosted, GitLab-shared). Permissive thresholds, fast timeouts, peripheral and security checks excluded. |
+
+Select with `--profile <name>` (mutually exclusive with `--config`).
+
+## Webhook output
+
+`--webhook-url <url>` POSTs the JSON report with `Content-Type:
+application/json` and an HMAC-SHA256 signature derived from the body and
+the secret in `HW_PREFLIGHT_WEBHOOK_SECRET`:
+
+| Header | Value |
+|---|---|
+| `X-HW-Preflight-Signature` | `sha256=<hex hmac>` of body |
+| `X-HW-Preflight-Timestamp` | unix epoch seconds at signing |
+
+A receiver re-computes `HMAC_SHA256(body, secret)` and compares against
+the header to authenticate the payload. The
+[`tests/unit/test_webhook.py`](tests/unit/test_webhook.py) suite documents
+this round-trip end to end.
 
 ## Architecture
 
