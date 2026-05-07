@@ -1,0 +1,52 @@
+# hw-preflight default configuration. Every field below shows the built-in
+# default; copy and tweak only what you want to override.
+
+cpu:
+  min_count: 2
+  required_features:
+    - sse4_2
+
+memory:
+  min_total_bytes: 1073741824        # 1 GiB
+  min_available_bytes: 268435456     # 256 MiB
+  require_swap_disabled: false
+
+disk:
+  path: /
+  min_free_bytes: 1073741824         # 1 GiB
+
+system:
+  loadavg_factor: 1.5
+  min_kernel_version: "5.10.0"
+  required_modules:
+    - loop
+  allowed_clocksources:
+    - tsc
+    - kvm-clock
+    - xen
+    - arch_sys_counter
+
+thermal:
+  max_milli_celsius: 80000
+
+serial:
+  candidate_paths:
+    - /dev/ttyS0
+    - /dev/ttyUSB0
+  by_id_glob: /dev/serial/by-id/*
+  baudrate: 115200
+  handshake_send: "AT\r\n"
+  handshake_response_regex: "^OK"
+  handshake_timeout_seconds: 1.0
+
+gpio:
+  min_chips: 0
+  min_i2c_buses: 0
+
+service:
+  units: []                          # e.g. ["chronyd", "ssh"]
+
+runner:
+  per_check_timeout_seconds: 5.0
+  enabled_checks: null               # null = all
+  disabled_checks: []
