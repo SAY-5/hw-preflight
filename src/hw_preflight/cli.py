@@ -46,16 +46,25 @@ def main() -> None:
     is_flag=True,
     help="Exit non-zero if any check is `fail` (skip and unavailable do not trigger).",
 )
+@click.option(
+    "--parallelism",
+    type=int,
+    default=None,
+    help="Worker thread count (default 1 = serial; pass 0 for cpu_count()).",
+)
 @click.option("--quiet", is_flag=True, help="Suppress stdout summary.")
 def run(
     config_path: Path | None,
     json_path: Path | None,
     md_path: Path | None,
     exit_on_fail: bool,
+    parallelism: int | None,
     quiet: bool,
 ) -> None:
     """Run every registered check and emit a report."""
     config = load_config(config_path)
+    if parallelism is not None:
+        config.runner.parallelism = parallelism
     report = run_all(config)
 
     if json_path is not None:

@@ -23,9 +23,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: ruff
-        run: python -m ruff check src tests
+        run: python -m ruff check src tests bench
       - name: black
-        run: python -m black --check src tests
+        run: python -m black --check src tests bench
 
   typecheck:
     runs-on: ubuntu-24.04
@@ -102,6 +102,29 @@ jobs:
         env:
           RUN_INTEGRATION: "1"
         run: python -m pytest tests/integration -v
+
+  bench:
+    runs-on: ubuntu-24.04
+    needs: [test-py]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run bench (5 repeats, serial vs parallel)
+        run: python -m bench.run_suite_bench --repeats 5
+      - name: Regression gate (30% drift)
+        run: make bench-regress
+      - name: Upload bench result
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-result
+          path: bench/results/*.json
+          if-no-files-found: error
 
   fuzz-cpp:
     runs-on: ubuntu-24.04

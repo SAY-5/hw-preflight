@@ -116,18 +116,49 @@ def _run_one(name: str, func: Any, config: PreflightConfig, timeout: float) -> C
     return result
 
 
-def run_all(config: PreflightConfig) -> RunReport:
-    """Execute every selected check sequentially and produce a report.
+def _resolve_parallelism(config: PreflightConfig) -> int:
+    """Translate the runner.parallelism config into a worker count.
 
-    Checks run sequentially because several reach into shared OS state
-    (subprocess, /proc) and parallelism would obscure attribution if a
-    single check misbehaves. Each is bounded by a per-check timeout.
+    Values <= 0 select ``os.cpu_count()`` (with a minimum of 1).
+    A value of 1 means serial execution; the runner skips the thread pool
+    in that case so attribution is always clean for a single misbehaving
+    check.
+    """
+    p = config.runner.parallelism
+    if p <= 0:
+        return max(os.cpu_count() or 1, 1)
+    return p
+
+
+def run_all(config: PreflightConfig) -> RunReport:
+    """Execute every selected check and produce a report.
+
+    Checks are independent reads of OS state (``/proc``, ``/sys``,
+    ``subprocess``, serial I/O), so they parallelize cleanly when the
+    user opts in via ``runner.parallelism``. Each check is bounded by a
+    per-check timeout, and the result list is always sorted by check
+    name to keep downstream consumers deterministic regardless of
+    schedule.
     """
     started = _now_iso()
     selected = _select_checks(config)
-    results: list[CheckResult] = []
-    for name, fn in selected:
-        results.append(_run_one(name, fn, config, config.runner.per_check_timeout_seconds))
+    timeout = config.runner.per_check_timeout_seconds
+    workers = _resolve_parallelism(config)
+
+    results: list[CheckResult]
+    if workers <= 1 or len(selected) <= 1:
+        results = [_run_one(n, fn, config, timeout) for n, fn in selected]
+    else:
+        # Cap workers at the number of selected checks; spawning more
+        # threads than tasks is wasteful and noisy in profiling output.
+        workers = min(workers, len(selected))
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="hw-preflight") as ex:
+            futures = {ex.submit(_run_one, n, fn, config, timeout): n for n, fn in selected}
+            unsorted: list[CheckResult] = []
+            for fut in futures:
+                unsorted.append(fut.result())
+        results = sorted(unsorted, key=lambda r: r.name)
+
     finished = _now_iso()
     return RunReport(
         started_at=started,

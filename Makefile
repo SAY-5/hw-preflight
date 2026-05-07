@@ -1,4 +1,4 @@
-.PHONY: dev build build-py build-cpp test test-unit test-integration test-e2e lint typecheck format run clean
+.PHONY: dev build build-py build-cpp test test-unit test-integration test-e2e lint typecheck format run bench bench-regress clean
 
 PYTHON ?= python3
 PIP ?= $(PYTHON) -m pip
@@ -31,18 +31,24 @@ test-cpp:
 	cd $(CMAKE_BUILD_DIR) && ctest --output-on-failure
 
 lint:
-	$(PYTHON) -m ruff check src tests
-	$(PYTHON) -m black --check src tests
+	$(PYTHON) -m ruff check src tests bench
+	$(PYTHON) -m black --check src tests bench
 
 typecheck:
 	$(PYTHON) -m mypy
 
 format:
-	$(PYTHON) -m ruff check --fix src tests
-	$(PYTHON) -m black src tests
+	$(PYTHON) -m ruff check --fix src tests bench
+	$(PYTHON) -m black src tests bench
 
 run:
 	$(PYTHON) -m hw_preflight.cli run --json out.json --md out.md
+
+bench:
+	$(PYTHON) -m bench.run_suite_bench --repeats 5
+
+bench-regress:
+	$(PYTHON) -m bench.run_suite_bench --repeats 5 --check-regress --threshold 0.30
 
 clean:
 	rm -rf $(CMAKE_BUILD_DIR) build dist *.egg-info

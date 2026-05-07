@@ -60,6 +60,7 @@ class RunnerConfig(BaseModel):
     per_check_timeout_seconds: float = 5.0
     enabled_checks: list[str] | None = None  # None = all
     disabled_checks: list[str] = Field(default_factory=list)
+    parallelism: int = 1  # 1 = serial; >1 = thread pool size; <=0 means CPU count.
 
 
 class PreflightConfig(BaseModel):
