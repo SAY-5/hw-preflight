@@ -1,8 +1,9 @@
 # hw-preflight
 
-`hw-preflight` is a Linux hardware pre-flight check runner: 18 checks
-across CPU, memory, disk, kernel, thermal, serial, network, GPIO, I2C, and
-systemd, each emitting one of `pass | fail | skip | unavailable`. The
+`hw-preflight` is a Linux hardware pre-flight check runner: 24 checks
+across CPU, memory, disk, kernel, thermal, serial, network, GPIO, I2C,
+systemd, NVMe SMART, USB, RTC drift, IOMMU groups, VM overcommit, and
+SELinux mode, each emitting one of `pass | fail | skip | unavailable`. The
 runner produces a JSON and Markdown report with raw measured values,
 expected thresholds, and a failure-detail section. Checks read `/proc`,
 `/sys`, run a few standard binaries (`ip`, `timedatectl`, `systemctl`),
@@ -68,28 +69,34 @@ The full machine-readable artifact is at
 [`examples/sample-run.json`](examples/sample-run.json) and the rendered
 Markdown at [`examples/sample-run.md`](examples/sample-run.md).
 
-## The 18 checks
+## The 24 checks
 
-| Check | What it reads |
-|---|---|
-| `cpu_count` | `os.cpu_count()` against `cpu.min_count` |
-| `cpu_features` | C++ `__builtin_cpu_supports` ∪ `/proc/cpuinfo flags:` against `cpu.required_features` |
-| `memory_total` | `/proc/meminfo MemTotal` |
-| `memory_available` | `/proc/meminfo MemAvailable` |
-| `swap_disabled` | `/proc/meminfo SwapTotal == 0` (toggle) |
-| `disk_free` | `os.statvfs(path)` |
-| `loadavg_short` | `/proc/loadavg` 1-minute load against `cpu_count * factor` |
-| `kernel_version` | `os.uname().release` against `system.min_kernel_version` |
-| `kernel_module_loaded` | `/proc/modules` against `system.required_modules` |
-| `clock_source` | `/sys/devices/system/clocksource/clocksource0/current_clocksource` against allowlist |
-| `time_sync` | `timedatectl show -p NTPSynchronized --value` |
-| `thermal_max` | max of `/sys/class/thermal/thermal_zone*/temp` |
-| `serial_port_present` | `HW_PREFLIGHT_SERIAL_PATH` -> `serial.by_id_glob` -> `serial.candidate_paths` |
-| `serial_handshake` | open at 115200, write `AT\r\n`, regex-match response |
-| `network_default_route` | `ip route show default` |
-| `gpio_chips` | count of `gpiochip*` in `/sys/class/gpio` |
-| `i2c_bus_present` | count of `/dev/i2c-*` |
-| `service_unit_active` | `systemctl is-active <unit>` for each entry in `service.units` |
+| # | Check | What it reads |
+|---|---|---|
+| 1 | `cpu_count` | `os.cpu_count()` against `cpu.min_count` |
+| 2 | `cpu_features` | C++ `__builtin_cpu_supports` ∪ `/proc/cpuinfo flags:` against `cpu.required_features` |
+| 3 | `memory_total` | `/proc/meminfo MemTotal` |
+| 4 | `memory_available` | `/proc/meminfo MemAvailable` |
+| 5 | `swap_disabled` | `/proc/meminfo SwapTotal == 0` (toggle) |
+| 6 | `disk_free` | `os.statvfs(path)` |
+| 7 | `loadavg_short` | `/proc/loadavg` 1-minute load against `cpu_count * factor` |
+| 8 | `kernel_version` | `os.uname().release` against `system.min_kernel_version` |
+| 9 | `kernel_module_loaded` | `/proc/modules` against `system.required_modules` |
+| 10 | `clock_source` | `/sys/devices/system/clocksource/clocksource0/current_clocksource` against allowlist |
+| 11 | `time_sync` | `timedatectl show -p NTPSynchronized --value` |
+| 12 | `thermal_max` | max of `/sys/class/thermal/thermal_zone*/temp` |
+| 13 | `serial_port_present` | `HW_PREFLIGHT_SERIAL_PATH` -> `serial.by_id_glob` -> `serial.candidate_paths` |
+| 14 | `serial_handshake` | open at 115200, write `AT\r\n`, regex-match response |
+| 15 | `network_default_route` | `ip route show default` |
+| 16 | `gpio_chips` | count of `gpiochip*` in `/sys/class/gpio` |
+| 17 | `i2c_bus_present` | count of `/dev/i2c-*` |
+| 18 | `service_unit_active` | `systemctl is-active <unit>` for each entry in `service.units` |
+| 19 | `nvme_smart` | `nvme smart-log /dev/nvme0n1` `critical_warning` field |
+| 20 | `usb_device_count` | count of entries under `/sys/bus/usb/devices/` |
+| 21 | `rtc_drift` | `/sys/class/rtc/rtc0/since_epoch` vs `time.time()` |
+| 22 | `pci_iommu_groups` | count of `/sys/kernel/iommu_groups/*` |
+| 23 | `vm_overcommit` | `/proc/sys/vm/overcommit_memory` against allowlist |
+| 24 | `selinux_status` | `getenforce` output (Enforcing / Permissive / Disabled) |
 
 See [`docs/checks.md`](docs/checks.md) for the per-check reference,
 including how each is mocked in CI.

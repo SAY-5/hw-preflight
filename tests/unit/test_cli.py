@@ -16,7 +16,7 @@ def test_list_command() -> None:
     assert res.exit_code == 0
     names = res.output.strip().splitlines()
     assert "cpu_count" in names
-    assert len(names) == 18
+    assert len(names) == 24
 
 
 def test_run_writes_files(tmp_path: Path) -> None:
@@ -26,7 +26,7 @@ def test_run_writes_files(tmp_path: Path) -> None:
     res = runner.invoke(main, ["run", "--json", str(j), "--md", str(m), "--quiet"])
     assert res.exit_code == 0
     data = json.loads(j.read_text())
-    assert "summary" in data and data["summary"]["total"] == 18
+    assert "summary" in data and data["summary"]["total"] == 24
     assert m.exists()
 
 

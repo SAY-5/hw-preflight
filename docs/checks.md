@@ -148,6 +148,49 @@ present.
 For each unit in `service.units`, runs `systemctl is-active <unit>` and
 expects `active`. Skipped when the list is empty (the default).
 
+## 19. `nvme_smart`
+
+Resolves the first `/dev/nvme*n1` device, runs
+`nvme smart-log <device>`, and parses the `critical_warning` field
+(decimal or `0x`-prefixed hex). Pass when zero, fail otherwise.
+Unavailable when `nvme-cli` is missing, no NVMe device is present, the
+command exits non-zero (typical when the runner lacks `CAP_SYS_RAWIO`),
+or the field cannot be parsed.
+
+## 20. `usb_device_count`
+
+Counts entries under `/sys/bus/usb/devices/`. Reports the count without
+imposing a minimum threshold — server VMs may legitimately enumerate
+zero USB devices. Unavailable when the kernel is built without USB
+support (`/sys/bus/usb` absent).
+
+## 21. `rtc_drift`
+
+Reads `/sys/class/rtc/rtc0/since_epoch`, compares it to `time.time()`,
+and reports the absolute drift in seconds. Pass when drift is within
+`rtc.max_drift_seconds` (default 5). Unavailable when the RTC sysfs
+node is missing (typical inside containers and many cloud VMs) or the
+file cannot be parsed.
+
+## 22. `pci_iommu_groups`
+
+Counts directories under `/sys/kernel/iommu_groups/`. Pass when at least
+one group exists (IOMMU enabled with at least one PCI device assigned);
+unavailable when the directory is missing or empty (IOMMU disabled).
+
+## 23. `vm_overcommit`
+
+Reads `/proc/sys/vm/overcommit_memory` and asserts the value is in the
+configured allowlist (default `[0, 1]`). Mode `2` (strict accounting)
+falls outside the default allowlist because it surprises long-running
+JVM/Python workloads; tier configs that need it can extend the list.
+
+## 24. `selinux_status`
+
+Invokes `getenforce`. Pass when the mode is `Enforcing` or `Permissive`;
+fail when `Disabled`. Unavailable when `getenforce` is not on PATH
+(Ubuntu, Alpine, container runtimes) or the command returns non-zero.
+
 ---
 
 ## Adding a new check

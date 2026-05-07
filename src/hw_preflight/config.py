@@ -56,6 +56,14 @@ class ServiceConfig(BaseModel):
     units: list[str] = Field(default_factory=list)
 
 
+class RtcConfig(BaseModel):
+    max_drift_seconds: float = 5.0
+
+
+class VmOvercommitConfig(BaseModel):
+    allowed_values: list[int] = Field(default_factory=lambda: [0, 1])
+
+
 class RunnerConfig(BaseModel):
     per_check_timeout_seconds: float = 5.0
     enabled_checks: list[str] | None = None  # None = all
@@ -72,6 +80,8 @@ class PreflightConfig(BaseModel):
     serial: SerialConfig = Field(default_factory=SerialConfig)
     gpio: GpioConfig = Field(default_factory=GpioConfig)
     service: ServiceConfig = Field(default_factory=ServiceConfig)
+    rtc: RtcConfig = Field(default_factory=RtcConfig)
+    vm_overcommit: VmOvercommitConfig = Field(default_factory=VmOvercommitConfig)
     runner: RunnerConfig = Field(default_factory=RunnerConfig)
 
 

@@ -32,13 +32,20 @@ EXPECTED_CHECKS = {
     "gpio_chips",
     "i2c_bus_present",
     "service_unit_active",
+    # v3 additions (numbers 19-24).
+    "nvme_smart",
+    "usb_device_count",
+    "rtc_drift",
+    "pci_iommu_groups",
+    "vm_overcommit",
+    "selinux_status",
 }
 
 
-def test_eighteen_checks_registered() -> None:
+def test_twentyfour_checks_registered() -> None:
     names = set(all_checks().keys())
     assert names == EXPECTED_CHECKS
-    assert len(names) == 18
+    assert len(names) == 24
 
 
 def test_run_one_records_duration() -> None:
