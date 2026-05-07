@@ -154,5 +154,5 @@ jobs:
           load: true
       - name: Smoke-run image
         run: |
-          docker run --rm hw-preflight:ci hw-preflight list
-          docker run --rm hw-preflight:ci hw-preflight run --quiet
+          docker run --rm hw-preflight:ci list
+          docker run --rm hw-preflight:ci run --quiet
