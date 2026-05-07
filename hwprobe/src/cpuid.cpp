@@ -17,31 +17,45 @@ std::string lower(std::string s) {
     return s;
 }
 
-// __builtin_cpu_supports is x86-only on GCC/Clang. We probe a curated set
-// and add whichever the runtime reports. On non-x86 the function is either
-// absent or returns 0, in which case we return an empty list and rely on
-// /proc/cpuinfo for the canonical answer.
+// __builtin_cpu_supports is x86-only on GCC/Clang and requires a string
+// literal at the call site (GCC enforces this). We unroll the probe
+// through a macro so every call sees a literal. On non-x86 the macro
+// expands to nothing and we rely on /proc/cpuinfo for the canonical
+// answer.
+//
+// The "kernel" name (second arg) matches the spelling in /proc/cpuinfo's
+// flags: line, which is the spelling hw-preflight's check expects.
+#define HWPROBE_PROBE(out, builtin_name, kernel_name) \
+    do {                                              \
+        if (__builtin_cpu_supports(builtin_name)) {   \
+            (out).push_back(kernel_name);             \
+        }                                             \
+    } while (0)
+
 std::vector<std::string> builtin_features() {
     std::vector<std::string> out;
 #if defined(__x86_64__) || defined(__i386__)
-    static constexpr const char* names[] = {
-        "mmx",  "sse",     "sse2", "sse3", "ssse3", "sse4.1", "sse4.2", "avx",
-        "avx2", "avx512f", "bmi",  "bmi2", "fma",   "popcnt", "aes",    "pclmul",
-    };
-    for (const char* n : names) {
-        if (__builtin_cpu_supports(n)) {
-            // Normalize "sse4.1"/"sse4.2" to "sse4_1"/"sse4_2" to match the
-            // /proc/cpuinfo spelling that hw-preflight's check expects.
-            std::string token = n;
-            for (auto& c : token) {
-                if (c == '.') c = '_';
-            }
-            out.push_back(token);
-        }
-    }
+    HWPROBE_PROBE(out, "mmx", "mmx");
+    HWPROBE_PROBE(out, "sse", "sse");
+    HWPROBE_PROBE(out, "sse2", "sse2");
+    HWPROBE_PROBE(out, "sse3", "sse3");
+    HWPROBE_PROBE(out, "ssse3", "ssse3");
+    HWPROBE_PROBE(out, "sse4.1", "sse4_1");
+    HWPROBE_PROBE(out, "sse4.2", "sse4_2");
+    HWPROBE_PROBE(out, "avx", "avx");
+    HWPROBE_PROBE(out, "avx2", "avx2");
+    HWPROBE_PROBE(out, "avx512f", "avx512f");
+    HWPROBE_PROBE(out, "bmi", "bmi1");
+    HWPROBE_PROBE(out, "bmi2", "bmi2");
+    HWPROBE_PROBE(out, "fma", "fma");
+    HWPROBE_PROBE(out, "popcnt", "popcnt");
+    HWPROBE_PROBE(out, "aes", "aes");
+    HWPROBE_PROBE(out, "pclmul", "pclmulqdq");
 #endif
     return out;
 }
+
+#undef HWPROBE_PROBE
 
 }  // namespace
 
