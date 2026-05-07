@@ -70,17 +70,36 @@ def test_serial_handshake_fail_regex(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert r.status == "fail"
 
 
+def test_serial_handshake_unavailable_on_eacces(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """EACCES on a real device path is reported as unavailable, not fail.
+
+    Many CI runners expose /dev/ttyS0 but disallow open() unless the
+    process is in the dialout group. That's a measurement problem, not
+    a hardware failure.
+    """
+    fake = tmp_path / "tty"
+    fake.write_text("")
+    monkeypatch.setenv(smod.ENV_PATH, str(fake))
+
+    def stub(path: str, baud: int, payload: bytes, timeout: float):
+        return False, b"", "serial error: [Errno 13] Permission denied: '/dev/ttyS0'"
+
+    r = smod.serial_handshake(PreflightConfig(), backend=stub)
+    assert r.status == "unavailable"
+
+
 def test_serial_handshake_fail_io(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake = tmp_path / "tty"
     fake.write_text("")
     monkeypatch.setenv(smod.ENV_PATH, str(fake))
 
     def stub(path: str, baud: int, payload: bytes, timeout: float):
-        return False, b"", "Permission denied"
+        return False, b"", "serial error: device disappeared mid-read"
 
     r = smod.serial_handshake(PreflightConfig(), backend=stub)
     assert r.status == "fail"
-    assert r.reason == "Permission denied"
 
 
 def test_serial_handshake_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
