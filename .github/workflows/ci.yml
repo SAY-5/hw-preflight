@@ -1,0 +1,158 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-py:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: ruff
+        run: python -m ruff check src tests
+      - name: black
+        run: python -m black --check src tests
+
+  typecheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - run: python -m mypy
+
+  lint-cpp:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+      - name: clang-format dry-run
+        run: |
+          clang-format --version
+          find hwprobe/src hwprobe/tests -type f \( -name '*.cpp' -o -name '*.h' \) \
+            -print0 | xargs -0 clang-format --dry-run -Werror
+
+  build-cpp:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ ninja-build
+      - name: Configure
+        run: cmake -S hwprobe -B hwprobe/build -DCMAKE_BUILD_TYPE=Release -G Ninja
+      - name: Build
+        run: cmake --build hwprobe/build -j
+      - name: Test
+        working-directory: hwprobe/build
+        run: ctest --output-on-failure
+      - name: Smoke-run hwprobe CLI
+        run: |
+          ./hwprobe/build/hwprobe cpuid
+          ./hwprobe/build/hwprobe dmi
+
+  test-py:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: System deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y socat
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Unit tests
+        run: python -m pytest tests/unit -v
+      - name: Integration tests
+        env:
+          RUN_INTEGRATION: "1"
+        run: python -m pytest tests/integration -v
+
+  e2e:
+    runs-on: ubuntu-24.04
+    needs: [test-py]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: System deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y socat
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: socat virtual-tty handshake
+        run: python -m pytest tests/e2e -v -m e2e
+      - name: Real run on the runner
+        run: hw-preflight run --json sample-run.json --md sample-run.md
+      - name: Show summary
+        run: |
+          python - <<'PY'
+          import json
+          d = json.load(open("sample-run.json"))
+          print("summary:", d["summary"])
+          for c in d["checks"]:
+              print(f"  {c['name']:<25} {c['status']}")
+          PY
+      - name: Upload sample run
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-run
+          path: |
+            sample-run.json
+            sample-run.md
+          if-no-files-found: error
+
+  build-image:
+    runs-on: ubuntu-24.04
+    needs: [build-cpp, test-py]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: hw-preflight:ci
+          load: true
+      - name: Smoke-run image
+        run: |
+          docker run --rm hw-preflight:ci hw-preflight list
+          docker run --rm hw-preflight:ci hw-preflight run --quiet

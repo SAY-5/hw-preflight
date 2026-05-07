@@ -1,0 +1,227 @@
+{
+  "checks": [
+    {
+      "duration_ms": 0.249,
+      "expected": {
+        "allowed": [
+          "tsc",
+          "kvm-clock",
+          "xen",
+          "arch_sys_counter"
+        ]
+      },
+      "measured": null,
+      "name": "clock_source",
+      "reason": "/sys/devices/system/clocksource/clocksource0/current_clocksource not present",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.152,
+      "expected": {
+        "min_count": 2
+      },
+      "measured": {
+        "cpu_count": 10
+      },
+      "name": "cpu_count",
+      "reason": null,
+      "status": "pass"
+    },
+    {
+      "duration_ms": 0.116,
+      "expected": {
+        "required": [
+          "sse4_2"
+        ]
+      },
+      "measured": {
+        "extension_available": false,
+        "feature_count": 0
+      },
+      "name": "cpu_features",
+      "reason": "no CPU feature flags readable (non-Linux host or unsupported arch)",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.102,
+      "expected": {
+        "min_bytes": 1073741824
+      },
+      "measured": {
+        "free_bytes": 8991776768,
+        "path": "/"
+      },
+      "name": "disk_free",
+      "reason": null,
+      "status": "pass"
+    },
+    {
+      "duration_ms": 0.081,
+      "expected": {
+        "min_chips": 0
+      },
+      "measured": null,
+      "name": "gpio_chips",
+      "reason": "/sys/class/gpio not present (no GPIO subsystem on host)",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.307,
+      "expected": {
+        "min_buses": 0
+      },
+      "measured": {
+        "bus_count": 0,
+        "buses": []
+      },
+      "name": "i2c_bus_present",
+      "reason": "no /dev/i2c-* nodes (no I2C buses on host)",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.067,
+      "expected": {
+        "any_of": [
+          "loop"
+        ]
+      },
+      "measured": null,
+      "name": "kernel_module_loaded",
+      "reason": "/proc/modules not present",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.122,
+      "expected": {
+        "min_version": "5.10.0"
+      },
+      "measured": {
+        "parsed": [
+          25,
+          0,
+          0
+        ],
+        "release": "25.0.0"
+      },
+      "name": "kernel_version",
+      "reason": null,
+      "status": "pass"
+    },
+    {
+      "duration_ms": 0.09,
+      "expected": null,
+      "measured": null,
+      "name": "loadavg_short",
+      "reason": "/proc/loadavg not present",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.078,
+      "expected": {
+        "min_bytes": 268435456
+      },
+      "measured": null,
+      "name": "memory_available",
+      "reason": "/proc/meminfo missing MemAvailable",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.078,
+      "expected": {
+        "min_bytes": 1073741824
+      },
+      "measured": null,
+      "name": "memory_total",
+      "reason": "/proc/meminfo missing MemTotal",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.269,
+      "expected": null,
+      "measured": null,
+      "name": "network_default_route",
+      "reason": "ip(8) not on PATH",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.224,
+      "expected": {
+        "baud": 115200,
+        "response_regex": "^OK",
+        "send": "AT\r\n",
+        "timeout_seconds": 1.0
+      },
+      "measured": null,
+      "name": "serial_handshake",
+      "reason": "no serial port resolved",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.171,
+      "expected": {
+        "by_id_glob": "/dev/serial/by-id/*",
+        "candidates": [
+          "/dev/ttyS0",
+          "/dev/ttyUSB0"
+        ],
+        "env_override": "HW_PREFLIGHT_SERIAL_PATH"
+      },
+      "measured": null,
+      "name": "serial_port_present",
+      "reason": "no serial port found via env, by-id glob, or candidate list",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.076,
+      "expected": {
+        "units": []
+      },
+      "measured": null,
+      "name": "service_unit_active",
+      "reason": "no service units configured",
+      "status": "skip"
+    },
+    {
+      "duration_ms": 0.058,
+      "expected": {
+        "require_swap_disabled": false
+      },
+      "measured": null,
+      "name": "swap_disabled",
+      "reason": "swap-disabled requirement not enforced by config",
+      "status": "skip"
+    },
+    {
+      "duration_ms": 0.091,
+      "expected": {
+        "max_milli_celsius": 80000
+      },
+      "measured": null,
+      "name": "thermal_max",
+      "reason": "no thermal zones in /sys/class/thermal",
+      "status": "unavailable"
+    },
+    {
+      "duration_ms": 0.224,
+      "expected": null,
+      "measured": null,
+      "name": "time_sync",
+      "reason": "timedatectl not on PATH",
+      "status": "unavailable"
+    }
+  ],
+  "finished_at": "2026-05-07T08:34:49.194511+00:00",
+  "host": {
+    "cpu_count": 10,
+    "hostname": "localhost",
+    "kernel": "25.0.0"
+  },
+  "started_at": "2026-05-07T08:34:49.191654+00:00",
+  "summary": {
+    "fail": 0,
+    "pass": 3,
+    "skip": 2,
+    "total": 18,
+    "unavailable": 13
+  }
+}
