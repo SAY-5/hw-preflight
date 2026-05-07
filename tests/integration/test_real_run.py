@@ -23,10 +23,10 @@ if os.environ.get("RUN_INTEGRATION") != "1":  # pragma: no cover
     pytest.skip("set RUN_INTEGRATION=1 to run", allow_module_level=True)
 
 
-def test_real_run_emits_eighteen() -> None:
+def test_real_run_emits_twentyfour() -> None:
     cfg = PreflightConfig()
     report = run_all(cfg)
-    assert report.summary["total"] == 18
+    assert report.summary["total"] == 24
 
 
 def test_real_run_writes_artifact(tmp_path: Path) -> None:
