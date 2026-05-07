@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hw-preflight"
+version = "0.1.0"
+description = "Linux hardware preflight: 18 sensor/memory/peripheral checks via /proc, /sys, syscalls, and serial I/O"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "Sai Asish Y" }]
+keywords = ["linux", "hardware", "preflight", "validation", "sensors"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Hardware",
+]
+dependencies = [
+    "click>=8.1",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "pyserial>=3.5",
+    "structlog>=24.1",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pyfakefs>=5.4",
+    "ruff>=0.5",
+    "black>=24.4",
+    "mypy>=1.10",
+    "types-pyyaml",
+    "types-pyserial",
+]
+
+[project.scripts]
+hw-preflight = "hw_preflight.cli:main"
+
+[project.urls]
+Repository = "https://github.com/SAY-5/hw-preflight"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hw_preflight = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["hwprobe/build", "hwprobe/_deps"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = ["E501"]  # black handles line length
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "N802", "N803"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312"]
+extend-exclude = "hwprobe/build|hwprobe/_deps"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+files = ["src/hw_preflight"]
+
+[[tool.mypy.overrides]]
+module = ["serial.*", "yaml.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+markers = [
+    "integration: real-host integration tests (gated by RUN_INTEGRATION=1)",
+    "e2e: end-to-end tests requiring socat or other external tools",
+]
