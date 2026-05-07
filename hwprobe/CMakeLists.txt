@@ -12,6 +12,7 @@ endif()
 
 option(HWPROBE_BUILD_TESTS "Build GoogleTest unit tests" ON)
 option(HWPROBE_BUILD_BINDINGS "Build pybind11 Python extension" OFF)
+option(HWPROBE_FUZZ "Build libFuzzer harness for parse_cpuinfo (Clang only)" OFF)
 
 include(FetchContent)
 
@@ -60,10 +61,22 @@ if(HWPROBE_BUILD_TESTS)
     FetchContent_MakeAvailable(googletest)
     add_executable(hwprobe_tests
         tests/test_cpuid.cpp
+        tests/test_cpuid_fuzz.cpp
         tests/test_dmi.cpp
     )
     target_link_libraries(hwprobe_tests PRIVATE hwprobe_core gtest_main)
     target_compile_options(hwprobe_tests PRIVATE -Wall -Wextra -Wpedantic)
     include(GoogleTest)
     gtest_discover_tests(hwprobe_tests)
+endif()
+
+# ---------------------------------------------------------------------------
+# Optional libFuzzer harness for parse_cpuinfo
+# ---------------------------------------------------------------------------
+if(HWPROBE_FUZZ)
+    add_executable(hwprobe_fuzz_cpuid tests/fuzz_cpuid.cpp src/cpuid.cpp)
+    target_include_directories(hwprobe_fuzz_cpuid PRIVATE src)
+    target_compile_options(hwprobe_fuzz_cpuid
+        PRIVATE -Wall -Wextra -Wpedantic -g -fsanitize=fuzzer,address)
+    target_link_options(hwprobe_fuzz_cpuid PRIVATE -fsanitize=fuzzer,address)
 endif()

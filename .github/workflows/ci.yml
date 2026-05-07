@@ -92,13 +92,34 @@ jobs:
       - name: Install package
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Unit tests
-        run: python -m pytest tests/unit -v
+          pip install -e ".[dev]" hypothesis
+      - name: Unit tests with coverage
+        run: |
+          python -m pytest tests/unit -v \
+            --cov=src/hw_preflight --cov-report=term-missing \
+            --cov-fail-under=95
       - name: Integration tests
         env:
           RUN_INTEGRATION: "1"
         run: python -m pytest tests/integration -v
+
+  fuzz-cpp:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang ninja-build
+      - name: Configure with libFuzzer
+        env:
+          CC: clang
+          CXX: clang++
+        run: cmake -S hwprobe -B hwprobe/build -DHWPROBE_FUZZ=ON -G Ninja
+      - name: Build fuzz harness
+        run: cmake --build hwprobe/build --target hwprobe_fuzz_cpuid -j
+      - name: Run fuzz sweep (10000 iterations)
+        run: ./hwprobe/build/hwprobe_fuzz_cpuid -runs=10000 -max_len=4096 -print_final_stats=1
 
   e2e:
     runs-on: ubuntu-24.04
