@@ -30,38 +30,43 @@ call into a small C++ helper compiled via CMake + pybind11.
 
 ## Sample report
 
-The table below is the output of `hw-preflight run --json
-examples/sample-run.json --md examples/sample-run.md` on a development
-host. The 13 `unavailable` rows are honest: this run was on macOS, where
-`/proc` and `/sys` are absent. On the GitHub Actions Linux runner most
-of those become `pass` (see the `e2e` workflow artifact for that file).
+The table below is the actual output of `hw-preflight run` on the
+GitHub Actions `ubuntu-24.04` runner (the JSON it came from is
+[`examples/sample-run.json`](examples/sample-run.json), produced by the
+`e2e` job and committed verbatim).
 
-- host: `localhost` (kernel `25.0.0`, 10 CPUs)
-- summary: 3 pass / 0 fail / 2 skip / 13 unavailable (18 total)
+- host: `ubuntu-runner` (kernel `6.17.0-1010-azure`, 4 CPUs)
+- summary: 11 pass / 1 fail / 2 skip / 4 unavailable (18 total)
 
 | # | Check | Status | Detail |
 |---|---|---|---|
-| 1 | `clock_source` | UNAVAIL | `/sys/devices/system/clocksource/clocksource0/current_clocksource` not present |
-| 2 | `cpu_count` | PASS | `cpu_count=10` |
-| 3 | `cpu_features` | UNAVAIL | no CPU feature flags readable (non-Linux host) |
-| 4 | `disk_free` | PASS | 8.4 GiB free on `/` |
-| 5 | `gpio_chips` | UNAVAIL | `/sys/class/gpio` not present |
+| 1 | `clock_source` | PASS | clocksource=`tsc` |
+| 2 | `cpu_count` | PASS | cpu_count=4 |
+| 3 | `cpu_features` | PASS | 102 flags read from `/proc/cpuinfo` (C++ ext built in `build-cpp` job; the `test-py` job uses the Python fallback) |
+| 4 | `disk_free` | PASS | 88.7 GiB free on `/` |
+| 5 | `gpio_chips` | UNAVAIL | no gpiochips exposed |
 | 6 | `i2c_bus_present` | UNAVAIL | no `/dev/i2c-*` nodes |
-| 7 | `kernel_module_loaded` | UNAVAIL | `/proc/modules` not present |
-| 8 | `kernel_version` | PASS | release `25.0.0` >= 5.10.0 |
-| 9 | `loadavg_short` | UNAVAIL | `/proc/loadavg` not present |
-| 10 | `memory_available` | UNAVAIL | `/proc/meminfo` missing MemAvailable |
-| 11 | `memory_total` | UNAVAIL | `/proc/meminfo` missing MemTotal |
-| 12 | `network_default_route` | UNAVAIL | `ip(8)` not on PATH |
-| 13 | `serial_handshake` | UNAVAIL | no serial port resolved |
-| 14 | `serial_port_present` | UNAVAIL | no candidate path matched |
+| 7 | `kernel_module_loaded` | FAIL | `loop` not loaded (Azure runner kernel ships it built-in, not as a module — adjust `system.required_modules` for tier) |
+| 8 | `kernel_version` | PASS | release `6.17.0-1010-azure` |
+| 9 | `loadavg_short` | PASS | loadavg=1.28, 4 CPUs |
+| 10 | `memory_available` | PASS | 14.6 GiB available |
+| 11 | `memory_total` | PASS | 15.6 GiB total |
+| 12 | `network_default_route` | PASS | 1 default route present |
+| 13 | `serial_handshake` | UNAVAIL | `/dev/ttyS0` exists but EACCES (runner not in `dialout`); the e2e job exercises the same code through socat with a real round-trip |
+| 14 | `serial_port_present` | PASS | path=`/dev/ttyS0` |
 | 15 | `service_unit_active` | SKIP | no service units configured |
 | 16 | `swap_disabled` | SKIP | swap-disabled requirement not enforced |
 | 17 | `thermal_max` | UNAVAIL | no thermal zones in `/sys/class/thermal` |
-| 18 | `time_sync` | UNAVAIL | `timedatectl` not on PATH |
+| 18 | `time_sync` | PASS | `NTPSynchronized=yes` |
 
-The full machine-readable artifact is at [`examples/sample-run.json`](examples/sample-run.json)
-and the rendered Markdown at [`examples/sample-run.md`](examples/sample-run.md).
+The single `fail` is honest: the default config requires the `loop`
+module, and the Azure runner kernel does not load it as a separate
+module. A real deployment changes `system.required_modules` to match
+its tier, or removes the constraint.
+
+The full machine-readable artifact is at
+[`examples/sample-run.json`](examples/sample-run.json) and the rendered
+Markdown at [`examples/sample-run.md`](examples/sample-run.md).
 
 ## The 18 checks
 

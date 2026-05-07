@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "duration_ms": 0.249,
+      "duration_ms": 0.511,
       "expected": {
         "allowed": [
           "tsc",
@@ -10,25 +10,27 @@
           "arch_sys_counter"
         ]
       },
-      "measured": null,
+      "measured": {
+        "current": "tsc"
+      },
       "name": "clock_source",
-      "reason": "/sys/devices/system/clocksource/clocksource0/current_clocksource not present",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     },
     {
-      "duration_ms": 0.152,
+      "duration_ms": 0.277,
       "expected": {
         "min_count": 2
       },
       "measured": {
-        "cpu_count": 10
+        "cpu_count": 4
       },
       "name": "cpu_count",
       "reason": null,
       "status": "pass"
     },
     {
-      "duration_ms": 0.116,
+      "duration_ms": 0.414,
       "expected": {
         "required": [
           "sse4_2"
@@ -36,19 +38,19 @@
       },
       "measured": {
         "extension_available": false,
-        "feature_count": 0
+        "feature_count": 102
       },
       "name": "cpu_features",
-      "reason": "no CPU feature flags readable (non-Linux host or unsupported arch)",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     },
     {
-      "duration_ms": 0.102,
+      "duration_ms": 0.182,
       "expected": {
         "min_bytes": 1073741824
       },
       "measured": {
-        "free_bytes": 8991776768,
+        "free_bytes": 95243603968,
         "path": "/"
       },
       "name": "disk_free",
@@ -56,17 +58,20 @@
       "status": "pass"
     },
     {
-      "duration_ms": 0.081,
+      "duration_ms": 0.277,
       "expected": {
         "min_chips": 0
       },
-      "measured": null,
+      "measured": {
+        "chip_count": 0,
+        "chips": []
+      },
       "name": "gpio_chips",
-      "reason": "/sys/class/gpio not present (no GPIO subsystem on host)",
+      "reason": "no gpiochips exposed",
       "status": "unavailable"
     },
     {
-      "duration_ms": 0.307,
+      "duration_ms": 0.511,
       "expected": {
         "min_buses": 0
       },
@@ -79,85 +84,105 @@
       "status": "unavailable"
     },
     {
-      "duration_ms": 0.067,
+      "duration_ms": 0.352,
       "expected": {
         "any_of": [
           "loop"
         ]
       },
-      "measured": null,
+      "measured": {
+        "found": [],
+        "loaded_count": 57
+      },
       "name": "kernel_module_loaded",
-      "reason": "/proc/modules not present",
-      "status": "unavailable"
+      "reason": "none of ['loop'] loaded",
+      "status": "fail"
     },
     {
-      "duration_ms": 0.122,
+      "duration_ms": 0.319,
       "expected": {
         "min_version": "5.10.0"
       },
       "measured": {
         "parsed": [
-          25,
-          0,
+          6,
+          17,
           0
         ],
-        "release": "25.0.0"
+        "release": "6.17.0-1010-azure"
       },
       "name": "kernel_version",
       "reason": null,
       "status": "pass"
     },
     {
-      "duration_ms": 0.09,
-      "expected": null,
-      "measured": null,
+      "duration_ms": 0.28,
+      "expected": {
+        "factor": 1.5,
+        "max_loadavg_1min": 6.0
+      },
+      "measured": {
+        "cpu_count": 4,
+        "loadavg_1min": 1.28
+      },
       "name": "loadavg_short",
-      "reason": "/proc/loadavg not present",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     },
     {
-      "duration_ms": 0.078,
+      "duration_ms": 0.354,
       "expected": {
         "min_bytes": 268435456
       },
-      "measured": null,
+      "measured": {
+        "bytes": 15627517952
+      },
       "name": "memory_available",
-      "reason": "/proc/meminfo missing MemAvailable",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     },
     {
-      "duration_ms": 0.078,
+      "duration_ms": 0.322,
       "expected": {
         "min_bytes": 1073741824
       },
-      "measured": null,
+      "measured": {
+        "bytes": 16766431232
+      },
       "name": "memory_total",
-      "reason": "/proc/meminfo missing MemTotal",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     },
     {
-      "duration_ms": 0.269,
+      "duration_ms": 1.858,
       "expected": null,
-      "measured": null,
+      "measured": {
+        "routes": [
+          "default via 10.1.0.1 dev eth0 proto dhcp src 10.1.1.133 metric 100 "
+        ]
+      },
       "name": "network_default_route",
-      "reason": "ip(8) not on PATH",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     },
     {
-      "duration_ms": 0.224,
+      "duration_ms": 1.794,
       "expected": {
         "baud": 115200,
         "response_regex": "^OK",
         "send": "AT\r\n",
         "timeout_seconds": 1.0
       },
-      "measured": null,
+      "measured": {
+        "error": "serial error: [Errno 13] could not open port /dev/ttyS0: [Errno 13] Permission denied: '/dev/ttyS0'",
+        "path": "/dev/ttyS0"
+      },
       "name": "serial_handshake",
-      "reason": "no serial port resolved",
+      "reason": "serial error: [Errno 13] could not open port /dev/ttyS0: [Errno 13] Permission denied: '/dev/ttyS0'",
       "status": "unavailable"
     },
     {
-      "duration_ms": 0.171,
+      "duration_ms": 0.269,
       "expected": {
         "by_id_glob": "/dev/serial/by-id/*",
         "candidates": [
@@ -166,13 +191,15 @@
         ],
         "env_override": "HW_PREFLIGHT_SERIAL_PATH"
       },
-      "measured": null,
+      "measured": {
+        "path": "/dev/ttyS0"
+      },
       "name": "serial_port_present",
-      "reason": "no serial port found via env, by-id glob, or candidate list",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     },
     {
-      "duration_ms": 0.076,
+      "duration_ms": 0.167,
       "expected": {
         "units": []
       },
@@ -182,7 +209,7 @@
       "status": "skip"
     },
     {
-      "duration_ms": 0.058,
+      "duration_ms": 0.155,
       "expected": {
         "require_swap_disabled": false
       },
@@ -192,7 +219,7 @@
       "status": "skip"
     },
     {
-      "duration_ms": 0.091,
+      "duration_ms": 0.279,
       "expected": {
         "max_milli_celsius": 80000
       },
@@ -202,26 +229,30 @@
       "status": "unavailable"
     },
     {
-      "duration_ms": 0.224,
-      "expected": null,
-      "measured": null,
+      "duration_ms": 73.929,
+      "expected": {
+        "ntp_synchronized": "yes"
+      },
+      "measured": {
+        "ntp_synchronized": "yes"
+      },
       "name": "time_sync",
-      "reason": "timedatectl not on PATH",
-      "status": "unavailable"
+      "reason": null,
+      "status": "pass"
     }
   ],
-  "finished_at": "2026-05-07T08:34:49.194511+00:00",
+  "finished_at": "2026-05-07T08:47:31.952682+00:00",
   "host": {
-    "cpu_count": 10,
-    "hostname": "localhost",
-    "kernel": "25.0.0"
+    "cpu_count": 4,
+    "hostname": "ubuntu-runner",
+    "kernel": "6.17.0-1010-azure"
   },
-  "started_at": "2026-05-07T08:34:49.191654+00:00",
+  "started_at": "2026-05-07T08:47:31.870149+00:00",
   "summary": {
-    "fail": 0,
-    "pass": 3,
+    "fail": 1,
+    "pass": 11,
     "skip": 2,
     "total": 18,
-    "unavailable": 13
+    "unavailable": 4
   }
 }
