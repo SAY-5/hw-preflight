@@ -46,27 +46,35 @@ def _measure(parallelism: int, repeats: int) -> list[float]:
     return samples
 
 
-def _latest_baseline(platform_key: str | None = None) -> dict[str, object] | None:
+def _latest_baseline(
+    platform_key: str | None = None,
+    exclude_generated_at: str | None = None,
+) -> dict[str, object] | None:
     """Find the latest baseline JSON.
 
     When ``platform_key`` is provided, only baselines whose
     ``host.platform`` field starts with the same OS family are considered;
     macOS measurements should not gate Linux CI and vice versa.
+
+    When ``exclude_generated_at`` is provided, files whose
+    ``generated_at`` equals that timestamp are skipped — used by callers
+    to exclude their own just-written file from the search.
     """
     if not RESULTS_DIR.exists():
         return None
     candidates = sorted(RESULTS_DIR.glob("*.json"))
     if not candidates:
         return None
-    if platform_key is None:
-        with candidates[-1].open() as f:
-            return json.load(f)
     for path in reversed(candidates):
         with path.open() as f:
             data = json.load(f)
-        host_platform = str(data.get("host", {}).get("platform", ""))
-        if host_platform.split("-", 1)[0] == platform_key.split("-", 1)[0]:
-            return data
+        if exclude_generated_at is not None and data.get("generated_at") == exclude_generated_at:
+            continue
+        if platform_key is not None:
+            host_platform = str(data.get("host", {}).get("platform", ""))
+            if host_platform.split("-", 1)[0] != platform_key.split("-", 1)[0]:
+                continue
+        return data
     return None
 
 
@@ -123,8 +131,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {out_path}", file=sys.stderr)
 
     if args.check_regress:
-        baseline = _latest_baseline(platform_key=platform.platform())
-        if baseline is None or baseline.get("generated_at") == payload["generated_at"]:
+        baseline = _latest_baseline(
+            platform_key=platform.platform(),
+            exclude_generated_at=payload["generated_at"],
+        )
+        if baseline is None:
             print(
                 "no prior same-platform baseline; nothing to compare",
                 file=sys.stderr,
